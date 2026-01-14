@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Starship Flight</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html, #app {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            font-family: "Montserrat", Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        body {
+            background: radial-gradient(ellipse at center, #000428 0%, #0c0c0c 70%, #000 100%);
+            color: #fff;
+        }
+        
+        #app {
+            height: 100%;
+            position: relative;
+            perspective: 1000px;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+            z-index: 2;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(100, 150, 255, 0.2);
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+            color: #a0c8ff;
+        }
+        
+        .speed-indicator {
+            position: fixed;
+            top: 120px;
+            right: 20px;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
+        }
+        
+        .speed-indicator h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #00f2fe;
+            text-align: center;
+        }
+        
+        .speed-value {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.7);
+        }
+        
+        .speed-unit {
+            font-size: 12px;
+            color: #a0c8ff;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        .starship {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            width: 200px;
+            height: 80px;
+            pointer-events: none;
+        }
+        
+        .ship-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(30, 60, 120, 0.9), rgba(10, 30, 80, 0.9));
+            border-radius: 10px 10px 50% 50%;
+            border: 2px solid rgba(79, 172, 254, 0.8);
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+        }
+        
+        .ship-cockpit {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 40px;
+            background: radial-gradient(ellipse at center, rgba(0, 242, 254, 0.9), rgba(79, 172, 254, 0.5));
+            border-radius: 50% 50% 40% 40%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .ship-engine {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 30px;
+            background: linear-gradient(to bottom, #ff7e5f, #ff4500);
+            border-radius: 0 0 40% 40%;
+        }
+        
+        .engine-flame {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(ellipse at center, #ff4500 0%, rgba(255, 126, 95, 0.7) 40%, transparent 70%);
+            animation: flamePulse 0.5s infinite alternate;
+        }
+        
+        @keyframes flamePulse {
+            from { transform: translateX(-50%) scale(1); opacity: 0.9; }
+            to { transform: translateX(-50%) scale(1.2); opacity: 1; }
+        }
+        
+        .controls-panel {
+            position: fixed;
+            top: 120px;
+            left: 20px;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+        
+        .controls-panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #00f2fe;
+            border-bottom: 1px solid rgba(100, 150, 255, 0.2);
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #4facfe;
+            font-weight: 600;
+            border-left: 3px solid #00f2fe;
+            padding-left: 10px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .slider-container label {
+            width: 160px;
+            font-size: 13px;
+            color: rgba(160, 200, 255, 0.9);
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(100, 150, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4facfe;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.8);
+        }
+        
+        .slider-value {
+            width: 40px;
+            text-align: right;
+            font-size: 13px;
+            color: #00f2fe;
+            font-weight: 600;
+        }
+        
+        .buttons {
+            position: fixed;
+            width: 100%;
+            bottom: 20px;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        button, a {
+            color: white;
+            font-family: "Montserrat", serif;
+            font-size: 12px;
+            text-decoration: none;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 5px;
+            border: 1px solid rgba(79, 172, 254, 0.4);
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-weight: 600;
+        }
+        
+        button:hover, a:hover {
+            background: rgba(79, 172, 254, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        }
+        
+        .reset-btn {
+            background: rgba(255, 126, 95, 0.2);
+            border-color: #ff7e5f;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        
+        .reset-btn:hover {
+            background: rgba(255, 126, 95, 0.4);
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-container label {
+            width: 160px;
+            font-size: 13px;
+            color: rgba(160, 200, 255, 0.9);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(100, 150, 255, 0.1);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #4facfe;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .instructions {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            max-width: 250px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+        }
+        
+        .instructions h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #00f2fe;
+        }
+        
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .instructions li {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #a0c8ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .instructions li i {
+            color: #4facfe;
+        }
+        
+        @media (max-width: 768px) {
+            .controls-panel {
+                width: calc(100% - 40px);
+                top: 100px;
+                left: 20px;
+                right: 20px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .speed-indicator {
+                top: 100px;
+                right: 10px;
+                padding: 10px;
+            }
+            
+            .instructions {
+                display: none;
+            }
+            
+            .starship {
+                width: 150px;
+                height: 60px;
+                bottom: 80px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>Cosmic Starship Flight</h1>
+            <p>Navigate through the galaxy. Control speed and direction with your cursor.</p>
+        </div>
+        
+        <canvas id="canvas"></canvas>
+        
+        <div class="speed-indicator">
+            <h3>WARP SPEED</h3>
+            <div class="speed-value" id="speed-value">7.5</div>
+            <div class="speed-unit">LIGHT-YEARS / MIN</div>
+        </div>
+        
+        <div class="starship">
+            <div class="ship-body"></div>
+            <div class="ship-cockpit"></div>
+            <div class="ship-engine"></div>
+            <div class="engine-flame"></div>
+        </div>
+        
+        <div class="controls-panel">
+            <h2><i class="fas fa-space-shuttle"></i> Flight Controls</h2>
+            
+            <div class="control-group">
+                <h3>Starship Parameters</h3>
+                
+                <div class="slider-container">
+                    <label for="warp-speed">Warp Speed:</label>
+                    <input type="range" id="warp-speed" min="1" max="10" step="0.1" value="7.5">
+                    <div class="slider-value" id="warp-speed-value">7.5</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="star-density">Star Density:</label>
+                    <input type="range" id="star-density" min="50" max="500" step="10" value="200">
+                    <div class="slider-value" id="star-density-value">200</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="star-size">Star Size:</label>
+                    <input type="range" id="star-size" min="0.5" max="3" step="0.1" value="1.5">
+                    <div class="slider-value" id="star-size-value">1.5</div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Visual Effects</h3>
+                
+                <div class="slider-container">
+                    <label for="trail-length">Star Trail Length:</label>
+                    <input type="range" id="trail-length" min="50" max="300" step="10" value="150">
+                    <div class="slider-value" id="trail-length-value">150</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="nebula-intensity">Nebula Intensity:</label>
+                    <input type="range" id="nebula-intensity" min="0" max="1" step="0.1" value="0.5">
+                    <div class="slider-value" id="nebula-intensity-value">0.5</div>
+                </div>
+                
+                <div class="toggle-container">
+                    <label for="warp-effect">Warp Effect:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="warp-effect" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-container">
+                    <label for="auto-pilot">Auto-Pilot:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-pilot">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Cosmic Colors</h3>
+                
+                <div class="slider-container">
+                    <label for="star-color">Star Color Hue:</label>
+                    <input type="range" id="star-color" min="0" max="360" step="1" value="200">
+                    <div class="slider-value" id="star-color-value">200°</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="nebula-color">Nebula Color Hue:</label>
+                    <input type="range" id="nebula-color" min="0" max="360" step="1" value="280">
+                    <div class="slider-value" id="nebula-color-value">280°</div>
+                </div>
+            </div>
+            
+            <button class="reset-btn" id="reset-btn">
+                <i class="fas fa-redo"></i> Reset Flight Controls
+            </button>
+        </div>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Flight Instructions</h3>
+            <ul>
+                <li><i class="fas fa-mouse-pointer"></i> Move cursor to steer</li>
+                <li><i class="fas fa-arrows-alt"></i> Move faster for sharper turns</li>
+                <li><i class="fas fa-sun"></i> Stars react to your movement</li>
+                <li><i class="fas fa-sliders-h"></i> Adjust settings in panel</li>
+            </ul>
+        </div>
+        
+        <div class="buttons">
+            <button type="button" id="random-nebula-btn">
+                <i class="fas fa-random"></i> Random Nebula
+            </button>
+            <button type="button" id="hyperdrive-btn">
+                <i class="fas fa-rocket"></i> Engage Hyperdrive
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Create starfield effect
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Starfield variables
+        let stars = [];
+        let starCount = 200;
+        let warpSpeed = 7.5;
+        let starSize = 1.5;
+        let trailLength = 150;
+        let nebulaIntensity = 0.5;
+        let starHue = 200;
+        let nebulaHue = 280;
+        let warpEffect = true;
+        let autoPilot = false;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        let shipX = canvas.width / 2;
+        let shipY = canvas.height / 2;
+        let hyperdriveActive = false;
+        let hyperdriveTimer = 0;
+        
+        // Initialize stars
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width * 2 - canvas.width / 2,
+                    y: Math.random() * canvas.height * 2 - canvas.height / 2,
+                    z: Math.random() * 1000,
+                    size: Math.random() * starSize + 0.5,
+                    speed: Math.random() * 2 + 1,
+                    trail: [],
+                    maxTrail: Math.floor(Math.random() * 20) + 10
+                });
+            }
+        }
+        
+        // Draw nebula background
+        function drawNebula() {
+            if (nebulaIntensity === 0) return;
+            
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
+            );
+            
+            const nebulaColor = `hsla(${nebulaHue}, 70%, 30%, ${nebulaIntensity * 0.3})`;
+            const nebulaColor2 = `hsla(${(nebulaHue + 40) % 360}, 70%, 40%, ${nebulaIntensity * 0.2})`;
+            
+            gradient.addColorStop(0, nebulaColor);
+            gradient.addColorStop(0.7, nebulaColor2);
+            gradient.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add some nebula clouds
+            for (let i = 0; i < 5; i++) {
+                const x = (Math.sin(Date.now() * 0.0001 + i) * 0.5 + 0.5) * canvas.width;
+                const y = (Math.cos(Date.now() * 0.0001 + i * 1.3) * 0.5 + 0.5) * canvas.height;
+                const radius = 100 + Math.sin(Date.now() * 0.0002 + i) * 50;
+                
+                const cloudGradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                cloudGradient.addColorStop(0, `hsla(${(nebulaHue + i * 20) % 360}, 60%, 50%, ${nebulaIntensity * 0.2})`);
+                cloudGradient.addColorStop(1, 'transparent');
+                
+                ctx.fillStyle = cloudGradient;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Update and draw stars
+        function updateStars() {
+            // Clear canvas with fade effect for trails
+            ctx.fillStyle = `rgba(0, 4, 40, ${hyperdriveActive ? 0.1 : 0.05})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw nebula
+            drawNebula();
+            
+            // Update ship position (smooth follow for auto-pilot)
+            if (autoPilot) {
+                mouseX = canvas.width / 2 + Math.sin(Date.now() * 0.001) * 200;
+                mouseY = canvas.height / 2 + Math.cos(Date.now() * 0.001) * 100;
+            }
+            
+            shipX += (mouseX - shipX) * 0.1;
+            shipY += (mouseY - shipY) * 0.1;
+            
+            // Calculate movement based on mouse position
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const moveX = (mouseX - centerX) / centerX;
+            const moveY = (mouseY - centerY) / centerY;
+            
+            // Update and draw stars
+            stars.forEach(star => {
+                // Move star toward center (creating flying through space effect)
+                const speedMultiplier = hyperdriveActive ? 3 : 1;
+                star.z -= (warpSpeed * star.speed * speedMultiplier);
+                
+                // Reset star if it goes behind camera
+                if (star.z < 1) {
+                    star.z = 1000;
+                    star.x = Math.random() * canvas.width * 2 - canvas.width / 2;
+                    star.y = Math.random() * canvas.height * 2 - canvas.height / 2;
+                    star.trail = [];
+                }
+                
+                // Calculate star position with perspective
+                const perspective = 500 / star.z;
+                const x = star.x * perspective + shipX;
+                const y = star.y * perspective + shipY;
+                
+                // Apply cursor movement effect
+                const cursorInfluence = warpEffect ? 0.5 : 0;
+                const finalX = x + moveX * cursorInfluence * (1000 - star.z) * 0.1;
+                const finalY = y + moveY * cursorInfluence * (1000 - star.z) * 0.1;
+                
+                // Add to trail
+                star.trail.push({x: finalX, y: finalY, size: star.size * perspective});
+                if (star.trail.length > star.maxTrail) {
+                    star.trail.shift();
+                }
+                
+                // Draw star trail
+                if (trailLength > 0 && star.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(star.trail[0].x, star.trail[0].y);
+                    
+                    for (let i = 1; i < star.trail.length; i++) {
+                        const point = star.trail[i];
+                        const alpha = i / star.trail.length * (trailLength / 100);
+                        
+                        ctx.lineTo(point.x, point.y);
+                        ctx.strokeStyle = `hsla(${starHue}, 100%, ${85 - i * 2}%, ${alpha * 0.5})`;
+                        ctx.lineWidth = point.size * 0.5;
+                        ctx.stroke();
+                    }
+                }
+                
+                // Draw star
+                const starBrightness = Math.min(100 - star.z / 20, 95);
+                const starColor = `hsla(${starHue}, 100%, ${starBrightness}%, 1)`;
+                
+                ctx.beginPath();
+                ctx.arc(finalX, finalY, star.size * perspective, 0, Math.PI * 2);
+                ctx.fillStyle = starColor;
+                ctx.fill();
+                
+                // Add glow effect for larger stars
+                if (star.size * perspective > 2) {
+                    const gradient = ctx.createRadialGradient(
+                        finalX, finalY, 0,
+                        finalX, finalY, star.size * perspective * 2
+                    );
+                    gradient.addColorStop(0, starColor);
+                    gradient.addColorStop(1, `hsla(${starHue}, 100%, ${starBrightness}%, 0)`);
+                    
+                    ctx.beginPath();
+                    ctx.arc(finalX, finalY, star.size * perspective * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+            });
+            
+            // Hyperdrive effect
+            if (hyperdriveActive) {
+                hyperdriveTimer++;
+                
+                // Draw hyperdrive tunnel effect
+                for (let i = 0; i < 20; i++) {
+                    const angle = (Date.now() * 0.01 + i * 0.3) % (Math.PI * 2);
+                    const radius = 50 + i * 20 + Math.sin(Date.now() * 0.01 + i) * 10;
+                    
+                    const x = shipX + Math.cos(angle) * radius;
+                    const y = shipY + Math.sin(angle) * radius;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsla(${(starHue + i * 10) % 360}, 100%, 70%, 0.7)`;
+                    ctx.fill();
+                }
+                
+                // End hyperdrive after 3 seconds
+                if (hyperdriveTimer > 180) {
+                    hyperdriveActive = false;
+                    hyperdriveTimer = 0;
+                    document.getElementById('hyperdrive-btn').innerHTML = '<i class="fas fa-rocket"></i> Engage Hyperdrive';
+                }
+            }
+            
+            // Draw speed lines for warp effect
+            if (warpEffect && warpSpeed > 5) {
+                for (let i = 0; i < 20; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    const length = Math.random() * 50 + 20;
+                    const speed = warpSpeed;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x - moveX * speed * 2, y - moveY * speed * 2);
+                    ctx.strokeStyle = `hsla(${starHue}, 100%, 80%, ${0.1 + Math.random() * 0.2})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            updateStars();
+            requestAnimationFrame(animate);
+        }
+        
+        // Initialize
+        initStars();
+        animate();
+        
+        // UI Controls
+        const warpSpeedSlider = document.getElementById('warp-speed');
+        const starDensitySlider = document.getElementById('star-density');
+        const starSizeSlider = document.getElementById('star-size');
+        const trailLengthSlider = document.getElementById('trail-length');
+        const nebulaIntensitySlider = document.getElementById('nebula-intensity');
+        const starColorSlider = document.getElementById('star-color');
+        const nebulaColorSlider = document.getElementById('nebula-color');
+        
+        const warpSpeedValue = document.getElementById('warp-speed-value');
+        const starDensityValue = document.getElementById('star-density-value');
+        const starSizeValue = document.getElementById('star-size-value');
+        const trailLengthValue = document.getElementById('trail-length-value');
+        const nebulaIntensityValue = document.getElementById('nebula-intensity-value');
+        const starColorValue = document.getElementById('star-color-value');
+        const nebulaColorValue = document.getElementById('nebula-color-value');
+        
+        const speedValueDisplay = document.getElementById('speed-value');
+        const warpEffectToggle = document.getElementById('warp-effect');
+        const autoPilotToggle = document.getElementById('auto-pilot');
+        const randomNebulaBtn = document.getElementById('random-nebula-btn');
+        const hyperdriveBtn = document.getElementById('hyperdrive-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        // Update speed display
+        function updateSpeedDisplay() {
+            speedValueDisplay.textContent = warpSpeed.toFixed(1);
+        }
+        
+        // Warp speed control
+        warpSpeedSlider.addEventListener('input', function() {
+            warpSpeed = parseFloat(this.value);
+            warpSpeedValue.textContent = warpSpeed.toFixed(1);
+            updateSpeedDisplay();
+        });
+        
+        // Star density control
+        starDensitySlider.addEventListener('input', function() {
+            starCount = parseInt(this.value);
+            starDensityValue.textContent = starCount;
+            initStars();
+        });
+        
+        // Star size control
+        starSizeSlider.addEventListener('input', function() {
+            starSize = parseFloat(this.value);
+            starSizeValue.textContent = starSize.toFixed(1);
+            stars.forEach(star => {
+                star.size = Math.random() * starSize + 0.5;
+            });
+        });
+        
+        // Trail length control
+        trailLengthSlider.addEventListener('input', function() {
+            trailLength = parseInt(this.value);
+            trailLengthValue.textContent = trailLength;
+        });
+        
+        // Nebula intensity control
+        nebulaIntensitySlider.addEventListener('input', function() {
+            nebulaIntensity = parseFloat(this.value);
+            nebulaIntensityValue.textContent = nebulaIntensity.toFixed(1);
+        });
+        
+        // Star color control
+        starColorSlider.addEventListener('input', function() {
+            starHue = parseInt(this.value);
+            starColorValue.textContent = `${starHue}°`;
+        });
+        
+        // Nebula color control
+        nebulaColorSlider.addEventListener('input', function() {
+            nebulaHue = parseInt(this.value);
+            nebulaColorValue.textContent = `${nebulaHue}°`;
+        });
+        
+        // Toggle controls
+        warpEffectToggle.addEventListener('change', function() {
+            warpEffect = this.checked;
+        });
+        
+        autoPilotToggle.addEventListener('change', function() {
+            autoPilot = this.checked;
+        });
+        
+        // Random nebula button
+        randomNebulaBtn.addEventListener('click', function() {
+            nebulaHue = Math.floor(Math.random() * 360);
+            nebulaColorSlider.value = nebulaHue;
+            nebulaColorValue.textContent = `${nebulaHue}°`;
+            
+            starHue = (nebulaHue + 60) % 360;
+            starColorSlider.value = starHue;
+            starColorValue.textContent = `${starHue}°`;
+            
+            nebulaIntensity = Math.random() * 0.7 + 0.3;
+            nebulaIntensitySlider.value = nebulaIntensity;
+            nebulaIntensityValue.textContent = nebulaIntensity.toFixed(1);
+        });
+        
+        // Hyperdrive button
+        hyperdriveBtn.addEventListener('click', function() {
+            if (!hyperdriveActive) {
+                hyperdriveActive = true;
+                hyperdriveTimer = 0;
+                this.innerHTML = '<i class="fas fa-stop"></i> Hyperdrive Active';
+                
+                // Temporary speed boost
+                const originalSpeed = warpSpeed;
+                warpSpeed = 10;
+                
+                // Restore speed after hyperdrive
+                setTimeout(() => {
+                    warpSpeed = originalSpeed;
+                    warpSpeedSlider.value = originalSpeed;
+                    warpSpeedValue.textContent = originalSpeed.toFixed(1);
+                    updateSpeedDisplay();
+                }, 3000);
+            }
+        });
+        
+        // Reset button
+        resetBtn.addEventListener('click', function() {
+            // Reset sliders
+            warpSpeedSlider.value = 7.5;
+            starDensitySlider.value = 200;
+            starSizeSlider.value = 1.5;
+            trailLengthSlider.value = 150;
+            nebulaIntensitySlider.value = 0.5;
+            starColorSlider.value = 200;
+            nebulaColorSlider.value = 280;
+            
+            // Reset values
+            warpSpeed = 7.5;
+            starCount = 200;
+            starSize = 1.5;
+            trailLength = 150;
+            nebulaIntensity = 0.5;
+            starHue = 200;
+            nebulaHue = 280;
+            
+            // Update displays
+            warpSpeedValue.textContent = "7.5";
+            starDensityValue.textContent = "200";
+            starSizeValue.textContent = "1.5";
+            trailLengthValue.textContent = "150";
+            nebulaIntensityValue.textContent = "0.5";
+            starColorValue.textContent = "200°";
+            nebulaColorValue.textContent = "280°";
+            updateSpeedDisplay();
+            
+            // Reset toggles
+            warpEffectToggle.checked = true;
+            autoPilotToggle.checked = false;
+            warpEffect = true;
+            autoPilot = false;
+            
+            // Reinitialize stars
+            initStars();
+            
+            // Reset hyperdrive
+            hyperdriveActive = false;
+            hyperdriveBtn.innerHTML = '<i class="fas fa-rocket"></i> Engage Hyperdrive';
+        });
+        
+        // Mouse tracking
+        canvas.addEventListener('mousemove', function(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        // Touch tracking for mobile
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+        }, { passive: false });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        });
+        
+        // Initial speed display
+        updateSpeedDisplay();
+        
+        // Add some console instructions
+        console.log("Cosmic Starship Flight initialized!");
+        console.log("Move your cursor to navigate through the galaxy.");
+        console.log("Adjust warp speed and other parameters in the controls panel.");
+        console.log("Engage hyperdrive for a temporary speed boost!");
+    </script>
+</body>
+</html>
